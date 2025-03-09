@@ -8,7 +8,7 @@ on:
 
 jobs:
   build:
-    runs-on: macos-15-arm64  # Use macOS 15 ARM64 runner for VisionOS compatibility
+    runs-on: macos-15  # Use macOS 15 ARM64 runner for VisionOS compatibility
 
     steps:
       - name: Checkout Repository
