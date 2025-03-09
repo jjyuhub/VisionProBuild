@@ -1,4 +1,4 @@
-name: Build Vision Pro App
+name: Build Vision Pro App (Fixed SDK & Xcode)
 
 on:
   push:
@@ -8,27 +8,45 @@ on:
 
 jobs:
   build:
-    runs-on: macos-15
+    runs-on: self-hosted  # 👈 Uses self-hosted Mac with VisionOS SDK
 
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Verify Xcode and SDKs
+      - name: Verify Available Xcode Versions
         run: |
-          echo "Checking available Xcode versions..."
-          ls /Applications | grep Xcode
-          
-          echo "Currently selected Xcode version:"
+          echo "🔍 Checking available Xcode versions..."
+          ls /Applications | grep Xcode || echo "⚠️ No Xcode versions found in /Applications"
+
+      - name: Select Xcode 16.2
+        run: |
+          echo "🔄 Switching to Xcode 16.2..."
+          sudo xcode-select -s /Applications/Xcode_16.2.app || { 
+            echo "❌ Failed to switch Xcode version!";
+            echo "🛠️ Ensure Xcode 16.2 is installed in /Applications.";
+            exit 1;
+          }
+
+      - name: Verify Xcode Selection
+        run: |
+          echo "📌 Currently selected Xcode version:"
           xcode-select -p
-          xcodebuild -version
+          xcodebuild -version || echo "⚠️ Failed to retrieve Xcode version"
 
-          echo "Checking available SDKs..."
-          xcodebuild -showsdks
-
-      - name: Select Xcode Version
+      - name: Check for VisionOS SDK
         run: |
-          sudo xcode-select -s /Applications/Xcode_15.2.app
+          echo "🔎 Checking if VisionOS SDK is available..."
+          xcodebuild -showsdks
+          if ! xcodebuild -showsdks | grep -q "xros1"; then
+            echo "❌ VisionOS SDK not found!";
+            echo "🛠️ Ensure you have Xcode 16.2+ with VisionOS SDK installed.";
+            echo "➡️ Check Xcode settings with: xcode-select -p";
+            echo "➡️ Install VisionOS SDK manually via Xcode Preferences → Platforms.";
+            exit 1;
+          else
+            echo "✅ VisionOS SDK is installed!";
+          fi
 
       - name: Create Vision Pro Project
         run: |
@@ -78,16 +96,20 @@ jobs:
       - name: Build Vision Pro App
         run: |
           cd VisionProApp
-          echo "Starting build process..."
+          echo "🚀 Starting build process..."
           xcodebuild clean build \
             -project VisionProApp.xcodeproj \
             -scheme VisionProApp \
-            -sdk visionos \
+            -sdk xros1.2 \
             -configuration Debug \
             CODE_SIGN_IDENTITY="" \
             CODE_SIGNING_REQUIRED=NO \
             CODE_SIGNING_ALLOWED=NO \
-            | tee build_log.txt || { echo "❌ Build failed! See logs below:"; cat build_log.txt; exit 1; }
+            | tee build_log.txt || { 
+              echo "❌ Build failed! See logs below:";
+              cat build_log.txt;
+              exit 1;
+            }
 
       - name: Archive Vision Pro App
         run: |
@@ -95,7 +117,7 @@ jobs:
           xcodebuild archive \
             -project VisionProApp.xcodeproj \
             -scheme VisionProApp \
-            -sdk visionos \
+            -sdk xros1.2 \
             -configuration Debug \
             -archivePath build/VisionProApp.xcarchive \
             CODE_SIGN_IDENTITY="" \
