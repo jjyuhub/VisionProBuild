@@ -1,0 +1,104 @@
+name: Build Vision Pro App (Self-Contained)
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: macos-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set Up Xcode
+        run: sudo xcode-select -s /Applications/Xcode_15.2.app
+
+      - name: Create Vision Pro Project
+        run: |
+          mkdir VisionProApp
+          cd VisionProApp
+          
+          # Create Xcode project
+          xcodebuild -project VisionProApp.xcodeproj -list || true
+          xcodebuild -create-xcframework \
+            -framework VisionProApp.xcodeproj \
+            -output VisionProApp.xcframework || true
+
+          # Create main.swift
+          mkdir -p VisionProApp
+          cat > VisionProApp/main.swift <<EOF
+          import SwiftUI
+          @main
+          struct VisionProApp: App {
+              var body: some Scene {
+                  WindowGroup {
+                      Text("Hello, Vision Pro!")
+                          .padding()
+                  }
+              }
+          }
+          EOF
+
+          # Create Info.plist
+          cat > VisionProApp/Info.plist <<EOF
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+              <key>CFBundleIdentifier</key>
+              <string>com.example.visionproapp</string>
+              <key>CFBundleName</key>
+              <string>VisionProApp</string>
+              <key>CFBundleVersion</key>
+              <string>1.0</string>
+              <key>CFBundleShortVersionString</key>
+              <string>1.0</string>
+              <key>UILaunchStoryboardName</key>
+              <string>Main</string>
+          </dict>
+          </plist>
+          EOF
+
+      - name: Build Vision Pro App (No Code Signing)
+        run: |
+          cd VisionProApp
+          xcodebuild clean build \
+            -project VisionProApp.xcodeproj \
+            -scheme VisionProApp \
+            -sdk visionos \
+            -configuration Debug \
+            CODE_SIGN_IDENTITY="" \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGNING_ALLOWED=NO
+
+      - name: Archive Vision Pro App
+        run: |
+          cd VisionProApp
+          xcodebuild archive \
+            -project VisionProApp.xcodeproj \
+            -scheme VisionProApp \
+            -sdk visionos \
+            -configuration Debug \
+            -archivePath build/VisionProApp.xcarchive \
+            CODE_SIGN_IDENTITY="" \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGNING_ALLOWED=NO
+
+      - name: Export Vision Pro App (Unsigned)
+        run: |
+          cd VisionProApp
+          mkdir -p build/output
+          xcodebuild -exportArchive \
+            -archivePath build/VisionProApp.xcarchive \
+            -exportPath build/output \
+            -exportOptionsPlist <(echo '{}') || true
+
+      - name: Upload Build Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: VisionProApp
+          path: VisionProApp/build/output
