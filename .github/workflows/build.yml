@@ -90,10 +90,10 @@ jobs:
                 path: Resources/Info.plist
               settings:
                 base:
-                  CODE_SIGN_IDENTITY: ""
+                  CODE_SIGN_IDENTITY: "-"
                   CODE_SIGNING_REQUIRED: NO
                   CODE_SIGNING_ALLOWED: NO
-                  DEVELOPMENT_TEAM: "YOUR_TEAM_ID"
+                  CODE_SIGN_STYLE: Manual
           EOF
 
           # Generate the Xcode project
@@ -123,10 +123,7 @@ jobs:
             -project VisionProApp.xcodeproj \
             -scheme VisionProApp \
             -sdk xros \
-            -configuration Release \
-            CODE_SIGN_IDENTITY="" \
-            CODE_SIGNING_REQUIRED=NO \
-            CODE_SIGNING_ALLOWED=NO
+            -configuration Release
 
       - name: Archive Vision Pro App
         run: |
@@ -137,39 +134,16 @@ jobs:
             -scheme VisionProApp \
             -sdk xros \
             -configuration Release \
-            -archivePath build/VisionProApp.xcarchive \
-            CODE_SIGN_IDENTITY="" \
-            CODE_SIGNING_REQUIRED=NO \
-            CODE_SIGNING_ALLOWED=NO
+            -archivePath build/VisionProApp.xcarchive
 
-      - name: Create ExportOptions.plist
-        run: |
-          echo "Creating ExportOptions.plist..."
-          cat <<EOF > VisionProApp/ExportOptions.plist
-          <?xml version="1.0" encoding="UTF-8"?>
-          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-          <plist version="1.0">
-          <dict>
-              <key>method</key>
-              <string>ad-hoc</string>
-              <key>signingStyle</key>
-              <string>manual</string>
-              <key>stripSwiftSymbols</key>
-              <true/>
-              <key>teamID</key>
-              <string>YOUR_TEAM_ID</string>
-          </dict>
-          </plist>
-          EOF
-
-      - name: Export Vision Pro App
+      - name: Export Vision Pro App (Without Signing)
         run: |
           cd VisionProApp
           echo "Exporting Vision Pro App..."
           xcodebuild -exportArchive \
             -archivePath build/VisionProApp.xcarchive \
             -exportPath build/output \
-            -exportOptionsPlist ExportOptions.plist
+            -exportOptionsPlist <(echo '{}')
 
       - name: Upload Build Artifacts
         uses: actions/upload-artifact@v4
