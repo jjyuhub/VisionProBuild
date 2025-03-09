@@ -1,4 +1,4 @@
-name: Build Vision Pro App (macOS 15, xros2.0)
+name: Build Vision Pro App (macOS 15, xros2.2)
 
 on:
   push:
@@ -8,7 +8,7 @@ on:
 
 jobs:
   build:
-    runs-on: macos-15  # 👈 Use GitHub-hosted macOS 15 runner
+    runs-on: macos-15  # 👈 GitHub-hosted macOS 15 runner
 
     steps:
       - name: Checkout Repository
@@ -33,16 +33,16 @@ jobs:
           xcode-select -p
           xcodebuild -version
 
-      - name: Check for VisionOS 2.0 SDK
+      - name: Check for VisionOS 2.2 SDK
         run: |
           echo "🔎 Checking available SDKs..."
           xcodebuild -showsdks
-          if ! xcodebuild -showsdks | grep -q "xros2.0"; then
-            echo "❌ VisionOS 2.0 SDK (xros2.0) not found!";
-            echo "🛠️ Ensure that GitHub runners have the latest Xcode with VisionOS 2.0.";
+          if ! xcodebuild -showsdks | grep -q "xros2.2"; then
+            echo "❌ VisionOS 2.2 SDK (xros2.2) not found!";
+            echo "🛠️ Ensure that GitHub runners have the latest Xcode with VisionOS 2.2.";
             exit 1;
           else
-            echo "✅ VisionOS 2.0 SDK (xros2.0) is installed!";
+            echo "✅ VisionOS 2.2 SDK (xros2.2) is installed!";
           fi
 
       - name: Create Vision Pro Project
@@ -63,7 +63,7 @@ jobs:
           struct VisionProApp: App {
               var body: some Scene {
                   WindowGroup {
-                      Text("Hello, Vision Pro 2.0!")
+                      Text("Hello, Vision Pro 2.2!")
                           .padding()
                   }
               }
@@ -97,7 +97,7 @@ jobs:
           xcodebuild clean build \
             -project VisionProApp.xcodeproj \
             -scheme VisionProApp \
-            -sdk xros2.0 \
+            -sdk xros2.2 \
             -configuration Debug \
             CODE_SIGN_IDENTITY="" \
             CODE_SIGNING_REQUIRED=NO \
@@ -114,7 +114,7 @@ jobs:
           xcodebuild archive \
             -project VisionProApp.xcodeproj \
             -scheme VisionProApp \
-            -sdk xros2.0 \
+            -sdk xros2.2 \
             -configuration Debug \
             -archivePath build/VisionProApp.xcarchive \
             CODE_SIGN_IDENTITY="" \
