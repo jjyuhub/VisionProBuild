@@ -19,10 +19,38 @@ jobs:
           echo "Installing xcodegen..."
           brew install xcodegen
 
+      - name: Prepare Project Structure
+        run: |
+          echo "Setting up project structure..."
+          mkdir -p VisionProApp/Sources
+
+          # Create Swift source files
+          cat <<EOF > VisionProApp/Sources/ContentView.swift
+          import SwiftUI
+
+          struct ContentView: View {
+              var body: some View {
+                  Text("Hello, Vision Pro!")
+              }
+          }
+          EOF
+
+          cat <<EOF > VisionProApp/Sources/VisionProApp.swift
+          import SwiftUI
+
+          @main
+          struct VisionProApp: App {
+              var body: some Scene {
+                  WindowGroup {
+                      ContentView()
+                  }
+              }
+          }
+          EOF
+
       - name: Generate Xcode Project
         run: |
           echo "Generating Xcode project..."
-          mkdir -p VisionProApp
           cd VisionProApp
 
           # Create xcodegen spec
@@ -40,31 +68,6 @@ jobs:
 
           # Generate the Xcode project
           xcodegen generate
-
-          # Create Swift source file
-          mkdir -p Sources
-          cat <<EOF > Sources/ContentView.swift
-          import SwiftUI
-
-          struct ContentView: View {
-              var body: some View {
-                  Text("Hello, Vision Pro!")
-              }
-          }
-          EOF
-
-          cat <<EOF > Sources/VisionProApp.swift
-          import SwiftUI
-
-          @main
-          struct VisionProApp: App {
-              var body: some Scene {
-                  WindowGroup {
-                      ContentView()
-                  }
-              }
-          }
-          EOF
 
       - name: Select Xcode 16.2
         run: |
