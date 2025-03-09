@@ -14,24 +14,25 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Install xcodeproj CLI
+      - name: Select Xcode 16.2
         run: |
-          echo "Installing xcodeproj tool..."
-          gem install xcodeproj
+          echo "Switching to Xcode 16.2..."
+          sudo xcode-select -s /Applications/Xcode_16.2.app/Contents/Developer
+          xcodebuild -version
 
-      - name: Create Xcode Project
+      - name: Create Vision Pro App Project
         run: |
-          echo "Generating Xcode project..."
+          echo "Creating Vision Pro App Project..."
           mkdir -p VisionProApp
           cd VisionProApp
 
-          # Generate Xcode project with xcodeproj Ruby gem
-          ruby -e "
-          require 'xcodeproj'
-          project = Xcodeproj::Project.new('VisionProApp.xcodeproj')
-          target = project.new_target(:application, 'VisionProApp', :visionOS, '2.2')
-          project.save
-          "
+          # Initialize a new SwiftUI project using xcodebuild
+          xcodebuild -create-xcodeproj \
+            -project VisionProApp.xcodeproj \
+            -target VisionProApp \
+            -template SwiftUIApp \
+            -platform visionOS \
+            -sdk xros2.2
 
       - name: Add Source Files
         run: |
@@ -39,7 +40,18 @@ jobs:
 
           # Create Swift source file
           mkdir -p Sources
-          cat <<EOF > Sources/main.swift
+          cat <<EOF > Sources/ContentView.swift
+          import SwiftUI
+
+          struct ContentView: View {
+              var body: some View {
+                  Text("Hello, Vision Pro!")
+              }
+          }
+          EOF
+
+          # Create main app file
+          cat <<EOF > Sources/VisionProApp.swift
           import SwiftUI
 
           @main
@@ -50,29 +62,7 @@ jobs:
                   }
               }
           }
-
-          struct ContentView: View {
-              var body: some View {
-                  Text("Hello, Vision Pro!")
-              }
-          }
           EOF
-
-          # Add files to the project
-          ruby -e "
-          require 'xcodeproj'
-          project = Xcodeproj::Project.open('VisionProApp.xcodeproj')
-          group = project.main_group.find_subpath('Sources', true)
-          file_ref = group.new_file('Sources/main.swift')
-          project.targets.first.add_file_references([file_ref])
-          project.save
-          "
-
-      - name: Select Xcode 16.2
-        run: |
-          echo "Switching to Xcode 16.2..."
-          sudo xcode-select -s /Applications/Xcode_16.2.app/Contents/Developer
-          xcodebuild -version
 
       - name: Verify VisionOS 2.2 SDK
         run: |
