@@ -1,4 +1,4 @@
-name: Build Vision Pro App (Fixed SDK & Xcode)
+name: Build Vision Pro App (macOS 15, xros2.0)
 
 on:
   push:
@@ -8,7 +8,7 @@ on:
 
 jobs:
   build:
-    runs-on: self-hosted  # 👈 Uses self-hosted Mac with VisionOS SDK
+    runs-on: macos-15  # 👈 Use GitHub-hosted macOS 15 runner
 
     steps:
       - name: Checkout Repository
@@ -19,12 +19,11 @@ jobs:
           echo "🔍 Checking available Xcode versions..."
           ls /Applications | grep Xcode || echo "⚠️ No Xcode versions found in /Applications"
 
-      - name: Select Xcode 16.2
+      - name: Select Xcode 16.2 (Latest VisionOS Support)
         run: |
           echo "🔄 Switching to Xcode 16.2..."
           sudo xcode-select -s /Applications/Xcode_16.2.app || { 
             echo "❌ Failed to switch Xcode version!";
-            echo "🛠️ Ensure Xcode 16.2 is installed in /Applications.";
             exit 1;
           }
 
@@ -32,20 +31,18 @@ jobs:
         run: |
           echo "📌 Currently selected Xcode version:"
           xcode-select -p
-          xcodebuild -version || echo "⚠️ Failed to retrieve Xcode version"
+          xcodebuild -version
 
-      - name: Check for VisionOS SDK
+      - name: Check for VisionOS 2.0 SDK
         run: |
-          echo "🔎 Checking if VisionOS SDK is available..."
+          echo "🔎 Checking available SDKs..."
           xcodebuild -showsdks
-          if ! xcodebuild -showsdks | grep -q "xros1"; then
-            echo "❌ VisionOS SDK not found!";
-            echo "🛠️ Ensure you have Xcode 16.2+ with VisionOS SDK installed.";
-            echo "➡️ Check Xcode settings with: xcode-select -p";
-            echo "➡️ Install VisionOS SDK manually via Xcode Preferences → Platforms.";
+          if ! xcodebuild -showsdks | grep -q "xros2.0"; then
+            echo "❌ VisionOS 2.0 SDK (xros2.0) not found!";
+            echo "🛠️ Ensure that GitHub runners have the latest Xcode with VisionOS 2.0.";
             exit 1;
           else
-            echo "✅ VisionOS SDK is installed!";
+            echo "✅ VisionOS 2.0 SDK (xros2.0) is installed!";
           fi
 
       - name: Create Vision Pro Project
@@ -53,7 +50,7 @@ jobs:
           mkdir VisionProApp
           cd VisionProApp
 
-          # Create an Xcode project
+          # Create an Xcode project placeholder
           cat > VisionProApp.xcodeproj <<EOF
           {}
           EOF
@@ -66,7 +63,7 @@ jobs:
           struct VisionProApp: App {
               var body: some Scene {
                   WindowGroup {
-                      Text("Hello, Vision Pro!")
+                      Text("Hello, Vision Pro 2.0!")
                           .padding()
                   }
               }
@@ -100,7 +97,7 @@ jobs:
           xcodebuild clean build \
             -project VisionProApp.xcodeproj \
             -scheme VisionProApp \
-            -sdk xros1.2 \
+            -sdk xros2.0 \
             -configuration Debug \
             CODE_SIGN_IDENTITY="" \
             CODE_SIGNING_REQUIRED=NO \
@@ -117,7 +114,7 @@ jobs:
           xcodebuild archive \
             -project VisionProApp.xcodeproj \
             -scheme VisionProApp \
-            -sdk xros1.2 \
+            -sdk xros2.0 \
             -configuration Debug \
             -archivePath build/VisionProApp.xcarchive \
             CODE_SIGN_IDENTITY="" \
