@@ -23,6 +23,7 @@ jobs:
         run: |
           echo "Setting up project structure..."
           mkdir -p VisionProApp/Sources
+          mkdir -p VisionProApp/Resources
 
           # Create Swift source files
           cat <<EOF > VisionProApp/Sources/ContentView.swift
@@ -48,6 +49,26 @@ jobs:
           }
           EOF
 
+          # Create Info.plist
+          cat <<EOF > VisionProApp/Resources/Info.plist
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+              <key>CFBundleName</key>
+              <string>VisionProApp</string>
+              <key>CFBundleIdentifier</key>
+              <string>com.example.VisionProApp</string>
+              <key>CFBundleVersion</key>
+              <string>1.0</string>
+              <key>CFBundleShortVersionString</key>
+              <string>1.0</string>
+              <key>UILaunchStoryboardName</key>
+              <string>LaunchScreen</string>
+          </dict>
+          </plist>
+          EOF
+
       - name: Generate Xcode Project
         run: |
           echo "Generating Xcode project..."
@@ -62,8 +83,11 @@ jobs:
             VisionProApp:
               type: application
               platform: visionOS
-              sources: [Sources]
               deploymentTarget: '1.0'
+              sources: [Sources]
+              resources: [Resources/Info.plist]
+              info:
+                path: Resources/Info.plist
           EOF
 
           # Generate the Xcode project
