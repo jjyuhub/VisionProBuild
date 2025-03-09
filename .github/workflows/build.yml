@@ -14,29 +14,32 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Select Xcode 16.2
+      - name: Install xcodegen
         run: |
-          echo "Switching to Xcode 16.2..."
-          sudo xcode-select -s /Applications/Xcode_16.2.app/Contents/Developer
-          xcodebuild -version
+          echo "Installing xcodegen..."
+          brew install xcodegen
 
-      - name: Create Vision Pro App Project
+      - name: Generate Xcode Project
         run: |
-          echo "Creating Vision Pro App Project..."
+          echo "Generating Xcode project..."
           mkdir -p VisionProApp
           cd VisionProApp
 
-          # Initialize a new SwiftUI project using xcodebuild
-          xcodebuild -create-xcodeproj \
-            -project VisionProApp.xcodeproj \
-            -target VisionProApp \
-            -template SwiftUIApp \
-            -platform visionOS \
-            -sdk xros2.2
+          # Create xcodegen spec
+          cat <<EOF > project.yml
+          name: VisionProApp
+          options:
+            bundleIdPrefix: com.example
+          targets:
+            VisionProApp:
+              type: application
+              platform: visionOS
+              sources: [Sources]
+              deploymentTarget: '1.0'
+          EOF
 
-      - name: Add Source Files
-        run: |
-          cd VisionProApp
+          # Generate the Xcode project
+          xcodegen generate
 
           # Create Swift source file
           mkdir -p Sources
@@ -50,7 +53,6 @@ jobs:
           }
           EOF
 
-          # Create main app file
           cat <<EOF > Sources/VisionProApp.swift
           import SwiftUI
 
@@ -64,14 +66,20 @@ jobs:
           }
           EOF
 
-      - name: Verify VisionOS 2.2 SDK
+      - name: Select Xcode 16.2
+        run: |
+          echo "Switching to Xcode 16.2..."
+          sudo xcode-select -s /Applications/Xcode_16.2.app/Contents/Developer
+          xcodebuild -version
+
+      - name: Verify VisionOS SDK
         run: |
           echo "Checking available SDKs..."
-          if ! xcodebuild -showsdks | grep -q "xros2.2"; then
-            echo "VisionOS 2.2 SDK (xros2.2) not found!"
+          if ! xcodebuild -showsdks | grep -q "xros"; then
+            echo "VisionOS SDK not found!"
             exit 1
           else
-            echo "VisionOS 2.2 SDK (xros2.2) is available."
+            echo "VisionOS SDK is available."
           fi
 
       - name: Build Vision Pro App
@@ -81,7 +89,7 @@ jobs:
           xcodebuild clean build \
             -project VisionProApp.xcodeproj \
             -scheme VisionProApp \
-            -sdk xros2.2 \
+            -sdk xros \
             -configuration Release \
             CODE_SIGN_IDENTITY="" \
             CODE_SIGNING_REQUIRED=NO \
@@ -94,7 +102,7 @@ jobs:
           xcodebuild archive \
             -project VisionProApp.xcodeproj \
             -scheme VisionProApp \
-            -sdk xros2.2 \
+            -sdk xros \
             -configuration Release \
             -archivePath build/VisionProApp.xcarchive \
             CODE_SIGN_IDENTITY="" \
