@@ -29,7 +29,7 @@ jobs:
           ruby -e "
           require 'xcodeproj'
           project = Xcodeproj::Project.new('VisionProApp.xcodeproj')
-          target = project.new_target(:application, 'VisionProApp', :ios, '16.0')
+          target = project.new_target(:application, 'VisionProApp', :visionOS, '2.2')
           project.save
           "
 
@@ -46,8 +46,14 @@ jobs:
           struct VisionProApp: App {
               var body: some Scene {
                   WindowGroup {
-                      Text("Hello, Vision Pro!")
+                      ContentView()
                   }
+              }
+          }
+
+          struct ContentView: View {
+              var body: some View {
+                  Text("Hello, Vision Pro!")
               }
           }
           EOF
