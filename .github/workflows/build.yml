@@ -8,7 +8,7 @@ on:
 
 jobs:
   build:
-    runs-on: macos-15  # Use macOS 15 ARM64 runner for VisionOS compatibility
+    runs-on: macos-15  # Use macOS 15 runner for VisionOS compatibility
 
     steps:
       - name: Checkout Repository
@@ -30,20 +30,10 @@ jobs:
             echo "VisionOS 2.2 SDK (xros2.2) is available."
           fi
 
-      - name: Set Up Xcode Project
-        run: |
-          echo "Setting up Xcode project..."
-          mkdir -p VisionProApp
-          cd VisionProApp
-          swift package init --type executable
-          swift package generate-xcodeproj
-
       - name: Build Vision Pro App
         run: |
           echo "Building Vision Pro App..."
-          cd VisionProApp
           xcodebuild clean build \
-            -project VisionProApp.xcodeproj \
             -scheme VisionProApp \
             -sdk xros2.2 \
             -configuration Release \
@@ -54,9 +44,7 @@ jobs:
       - name: Archive Vision Pro App
         run: |
           echo "Archiving Vision Pro App..."
-          cd VisionProApp
           xcodebuild archive \
-            -project VisionProApp.xcodeproj \
             -scheme VisionProApp \
             -sdk xros2.2 \
             -configuration Release \
@@ -68,7 +56,6 @@ jobs:
       - name: Export Vision Pro App
         run: |
           echo "Exporting Vision Pro App..."
-          cd VisionProApp
           xcodebuild -exportArchive \
             -archivePath build/VisionProApp.xcarchive \
             -exportPath build/output \
@@ -78,4 +65,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: VisionProApp
-          path: VisionProApp/build/output
+          path: build/output
