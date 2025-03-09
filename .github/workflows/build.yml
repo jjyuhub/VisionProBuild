@@ -24,7 +24,6 @@ jobs:
           echo "Setting up project structure..."
           mkdir -p VisionProApp/Sources
           mkdir -p VisionProApp/Resources
-          mkdir -p VisionProApp/build
 
           # Create Swift source files
           cat <<EOF > VisionProApp/Sources/ContentView.swift
@@ -137,37 +136,8 @@ jobs:
             -configuration Release \
             -archivePath build/VisionProApp.xcarchive
 
-      - name: Create ExportOptions.plist
-        run: |
-          echo "Creating ExportOptions.plist..."
-          cat <<EOF > VisionProApp/build/ExportOptions.plist
-          <?xml version="1.0" encoding="UTF-8"?>
-          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-          <plist version="1.0">
-          <dict>
-              <key>method</key>
-              <string>release-testing</string>
-              <key>signingStyle</key>
-              <string>manual</string>
-              <key>stripSwiftSymbols</key>
-              <true/>
-          </dict>
-          </plist>
-          EOF
-          
-          chmod 644 VisionProApp/build/ExportOptions.plist
-
-      - name: Export Vision Pro App
-        run: |
-          cd VisionProApp
-          echo "Exporting Vision Pro App..."
-          xcodebuild -exportArchive \
-            -archivePath build/VisionProApp.xcarchive \
-            -exportPath build/output \
-            -exportOptionsPlist build/ExportOptions.plist
-
       - name: Upload Build Artifacts
         uses: actions/upload-artifact@v4
         with:
           name: VisionProApp
-          path: VisionProApp/build/output
+          path: VisionProApp/build
