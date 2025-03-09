@@ -34,6 +34,7 @@ jobs:
         run: |
           echo "Building Vision Pro App..."
           xcodebuild clean build \
+            -project VisionProApp.xcodeproj \
             -scheme VisionProApp \
             -sdk xros2.2 \
             -configuration Release \
@@ -45,6 +46,7 @@ jobs:
         run: |
           echo "Archiving Vision Pro App..."
           xcodebuild archive \
+            -project VisionProApp.xcodeproj \
             -scheme VisionProApp \
             -sdk xros2.2 \
             -configuration Release \
