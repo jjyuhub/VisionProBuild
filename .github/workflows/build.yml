@@ -88,6 +88,12 @@ jobs:
               resources: [Resources/Info.plist]
               info:
                 path: Resources/Info.plist
+              settings:
+                base:
+                  CODE_SIGN_IDENTITY: ""
+                  CODE_SIGNING_REQUIRED: NO
+                  CODE_SIGNING_ALLOWED: NO
+                  DEVELOPMENT_TEAM: "YOUR_TEAM_ID"
           EOF
 
           # Generate the Xcode project
@@ -145,11 +151,13 @@ jobs:
           <plist version="1.0">
           <dict>
               <key>method</key>
-              <string>development</string>
+              <string>ad-hoc</string>
               <key>signingStyle</key>
-              <string>automatic</string>
+              <string>manual</string>
               <key>stripSwiftSymbols</key>
               <true/>
+              <key>teamID</key>
+              <string>YOUR_TEAM_ID</string>
           </dict>
           </plist>
           EOF
