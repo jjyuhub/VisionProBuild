@@ -14,6 +14,54 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
+      - name: Install xcodeproj CLI
+        run: |
+          echo "Installing xcodeproj tool..."
+          gem install xcodeproj
+
+      - name: Create Xcode Project
+        run: |
+          echo "Generating Xcode project..."
+          mkdir -p VisionProApp
+          cd VisionProApp
+
+          # Generate Xcode project with xcodeproj Ruby gem
+          ruby -e "
+          require 'xcodeproj'
+          project = Xcodeproj::Project.new('VisionProApp.xcodeproj')
+          target = project.new_target(:application, 'VisionProApp', :ios, '16.0')
+          project.save
+          "
+
+      - name: Add Source Files
+        run: |
+          cd VisionProApp
+
+          # Create Swift source file
+          mkdir -p Sources
+          cat <<EOF > Sources/main.swift
+          import SwiftUI
+
+          @main
+          struct VisionProApp: App {
+              var body: some Scene {
+                  WindowGroup {
+                      Text("Hello, Vision Pro!")
+                  }
+              }
+          }
+          EOF
+
+          # Add files to the project
+          ruby -e "
+          require 'xcodeproj'
+          project = Xcodeproj::Project.open('VisionProApp.xcodeproj')
+          group = project.main_group.find_subpath('Sources', true)
+          file_ref = group.new_file('Sources/main.swift')
+          project.targets.first.add_file_references([file_ref])
+          project.save
+          "
+
       - name: Select Xcode 16.2
         run: |
           echo "Switching to Xcode 16.2..."
@@ -32,6 +80,7 @@ jobs:
 
       - name: Build Vision Pro App
         run: |
+          cd VisionProApp
           echo "Building Vision Pro App..."
           xcodebuild clean build \
             -project VisionProApp.xcodeproj \
@@ -44,6 +93,7 @@ jobs:
 
       - name: Archive Vision Pro App
         run: |
+          cd VisionProApp
           echo "Archiving Vision Pro App..."
           xcodebuild archive \
             -project VisionProApp.xcodeproj \
@@ -55,16 +105,35 @@ jobs:
             CODE_SIGNING_REQUIRED=NO \
             CODE_SIGNING_ALLOWED=NO
 
+      - name: Create ExportOptions.plist
+        run: |
+          echo "Creating ExportOptions.plist..."
+          cat <<EOF > VisionProApp/ExportOptions.plist
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+              <key>method</key>
+              <string>development</string>
+              <key>signingStyle</key>
+              <string>automatic</string>
+              <key>stripSwiftSymbols</key>
+              <true/>
+          </dict>
+          </plist>
+          EOF
+
       - name: Export Vision Pro App
         run: |
+          cd VisionProApp
           echo "Exporting Vision Pro App..."
           xcodebuild -exportArchive \
             -archivePath build/VisionProApp.xcarchive \
             -exportPath build/output \
-            -exportOptionsPlist <(echo '{}')
+            -exportOptionsPlist ExportOptions.plist
 
       - name: Upload Build Artifacts
         uses: actions/upload-artifact@v4
         with:
           name: VisionProApp
-          path: build/output
+          path: VisionProApp/build/output
