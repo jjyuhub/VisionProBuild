@@ -1,4 +1,4 @@
-name: Build Vision Pro App (Self-Hosted)
+name: Build Vision Pro App
 
 on:
   push:
