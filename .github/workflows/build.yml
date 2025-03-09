@@ -1,4 +1,4 @@
-name: Build Vision Pro App (macOS 15, xros2.2)
+name: Build Vision Pro App
 
 on:
   push:
@@ -8,138 +8,71 @@ on:
 
 jobs:
   build:
-    runs-on: macos-15  # 👈 GitHub-hosted macOS 15 runner
+    runs-on: macos-15-arm64  # Use macOS 15 ARM64 runner for VisionOS compatibility
 
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Verify Available Xcode Versions
+      - name: Select Xcode 16.2
         run: |
-          echo "🔍 Checking available Xcode versions..."
-          ls /Applications | grep Xcode || echo "⚠️ No Xcode versions found in /Applications"
-
-      - name: Select Xcode 16.2 (Latest VisionOS Support)
-        run: |
-          echo "🔄 Switching to Xcode 16.2..."
-          sudo xcode-select -s /Applications/Xcode_16.2.app || { 
-            echo "❌ Failed to switch Xcode version!";
-            exit 1;
-          }
-
-      - name: Verify Xcode Selection
-        run: |
-          echo "📌 Currently selected Xcode version:"
-          xcode-select -p
+          echo "Switching to Xcode 16.2..."
+          sudo xcode-select -s /Applications/Xcode_16.2.app/Contents/Developer
           xcodebuild -version
 
-      - name: Check for VisionOS 2.2 SDK
+      - name: Verify VisionOS 2.2 SDK
         run: |
-          echo "🔎 Checking available SDKs..."
-          xcodebuild -showsdks
+          echo "Checking available SDKs..."
           if ! xcodebuild -showsdks | grep -q "xros2.2"; then
-            echo "❌ VisionOS 2.2 SDK (xros2.2) not found!";
-            echo "🛠️ Ensure that GitHub runners have the latest Xcode with VisionOS 2.2.";
-            exit 1;
+            echo "VisionOS 2.2 SDK (xros2.2) not found!"
+            exit 1
           else
-            echo "✅ VisionOS 2.2 SDK (xros2.2) is installed!";
+            echo "VisionOS 2.2 SDK (xros2.2) is available."
           fi
 
-      - name: Create Vision Pro Xcode Project (Properly)
+      - name: Set Up Xcode Project
         run: |
-          echo "🛠️ Creating Vision Pro Xcode Project..."
-          mkdir VisionProApp
+          echo "Setting up Xcode project..."
+          mkdir -p VisionProApp
           cd VisionProApp
-
-          # Create an empty Xcode project
-          mkdir VisionProApp.xcodeproj
-          touch VisionProApp.xcodeproj/project.pbxproj
-
-          echo "✅ Xcode project structure created!"
-
-      - name: Create Vision Pro App Files
-        run: |
-          cd VisionProApp
-
-          # Create main.swift inside the correct source directory
-          mkdir -p Sources/VisionProApp
-          cat > Sources/VisionProApp/main.swift <<EOF
-          import SwiftUI
-          @main
-          struct VisionProApp: App {
-              var body: some Scene {
-                  WindowGroup {
-                      Text("Hello, Vision Pro 2.2!")
-                          .padding()
-                  }
-              }
-          }
-          EOF
-
-          # Create Info.plist
-          cat > Sources/VisionProApp/Info.plist <<EOF
-          <?xml version="1.0" encoding="UTF-8"?>
-          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-          <plist version="1.0">
-          <dict>
-              <key>CFBundleIdentifier</key>
-              <string>com.example.visionproapp</string>
-              <key>CFBundleName</key>
-              <string>VisionProApp</string>
-              <key>CFBundleVersion</key>
-              <string>1.0</string>
-              <key>CFBundleShortVersionString</key>
-              <string>1.0</string>
-              <key>UILaunchStoryboardName</key>
-              <string>Main</string>
-          </dict>
-          </plist>
-          EOF
-
-      - name: Verify Project Structure
-        run: |
-          echo "📂 Checking project files..."
-          ls -R VisionProApp
+          swift package init --type executable
+          swift package generate-xcodeproj
 
       - name: Build Vision Pro App
         run: |
+          echo "Building Vision Pro App..."
           cd VisionProApp
-          echo "🚀 Starting build process..."
           xcodebuild clean build \
             -project VisionProApp.xcodeproj \
             -scheme VisionProApp \
             -sdk xros2.2 \
-            -configuration Debug \
+            -configuration Release \
             CODE_SIGN_IDENTITY="" \
             CODE_SIGNING_REQUIRED=NO \
-            CODE_SIGNING_ALLOWED=NO \
-            | tee build_log.txt || { 
-              echo "❌ Build failed! See logs below:";
-              cat build_log.txt;
-              exit 1;
-            }
+            CODE_SIGNING_ALLOWED=NO
 
       - name: Archive Vision Pro App
         run: |
+          echo "Archiving Vision Pro App..."
           cd VisionProApp
           xcodebuild archive \
             -project VisionProApp.xcodeproj \
             -scheme VisionProApp \
             -sdk xros2.2 \
-            -configuration Debug \
+            -configuration Release \
             -archivePath build/VisionProApp.xcarchive \
             CODE_SIGN_IDENTITY="" \
             CODE_SIGNING_REQUIRED=NO \
             CODE_SIGNING_ALLOWED=NO
 
-      - name: Export Vision Pro App (Unsigned)
+      - name: Export Vision Pro App
         run: |
+          echo "Exporting Vision Pro App..."
           cd VisionProApp
-          mkdir -p build/output
           xcodebuild -exportArchive \
             -archivePath build/VisionProApp.xcarchive \
             -exportPath build/output \
-            -exportOptionsPlist <(echo '{}') || true
+            -exportOptionsPlist <(echo '{}')
 
       - name: Upload Build Artifacts
         uses: actions/upload-artifact@v4
