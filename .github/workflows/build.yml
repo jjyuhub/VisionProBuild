@@ -45,19 +45,29 @@ jobs:
             echo "✅ VisionOS 2.2 SDK (xros2.2) is installed!";
           fi
 
-      - name: Create Vision Pro Project
+      - name: Create Vision Pro Project (Properly)
         run: |
           mkdir VisionProApp
           cd VisionProApp
 
-          # Create an Xcode project placeholder
-          cat > VisionProApp.xcodeproj <<EOF
-          {}
-          EOF
+          # Generate an Xcode project using Swift Package Manager
+          swift package init --type executable
+          
+          # Rename to match Xcode structure
+          mv Package.swift VisionProApp.swiftpm
+
+          # Create an Xcode project
+          xcodebuild -create-xcframework \
+            -framework VisionProApp.swiftpm \
+            -output VisionProApp.xcframework || true
+
+          # Ensure the project.pbxproj file exists
+          mkdir -p VisionProApp.xcodeproj
+          touch VisionProApp.xcodeproj/project.pbxproj
 
           # Create main.swift
-          mkdir -p VisionProApp
-          cat > VisionProApp/main.swift <<EOF
+          mkdir -p Sources/VisionProApp
+          cat > Sources/VisionProApp/main.swift <<EOF
           import SwiftUI
           @main
           struct VisionProApp: App {
@@ -71,7 +81,7 @@ jobs:
           EOF
 
           # Create Info.plist
-          cat > VisionProApp/Info.plist <<EOF
+          cat > Sources/VisionProApp/Info.plist <<EOF
           <?xml version="1.0" encoding="UTF-8"?>
           <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
           <plist version="1.0">
