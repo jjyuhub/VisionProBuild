@@ -1,4 +1,4 @@
-name: Build Vision Pro App (Self-Contained)
+name: Build Vision Pro App (Verbose Debugging)
 
 on:
   push:
@@ -8,26 +8,38 @@ on:
 
 jobs:
   build:
-    runs-on: macos-15
+    runs-on: macos-latest
 
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Set Up Xcode
-        run: sudo xcode-select -s /Applications/Xcode_15.2.app
+      - name: Debug Available SDKs
+        run: |
+          echo "Checking available SDKs..."
+          xcodebuild -showsdks || echo "⚠️ Failed to list available SDKs"
+
+      - name: Debug Available Xcode Versions
+        run: |
+          echo "Checking available Xcode versions..."
+          ls /Applications | grep Xcode || echo "⚠️ No Xcode versions found in /Applications"
+
+      - name: Select Xcode Version
+        run: |
+          echo "Switching to Xcode 15..."
+          sudo xcode-select -s /Applications/Xcode_15.2.app || echo "⚠️ Failed to switch Xcode version"
+
+      - name: Confirm Xcode Version
+        run: |
+          echo "Currently selected Xcode version:"
+          xcode-select -p || echo "⚠️ Failed to retrieve Xcode path"
+          xcodebuild -version || echo "⚠️ Failed to retrieve Xcode version"
 
       - name: Create Vision Pro Project
         run: |
           mkdir VisionProApp
           cd VisionProApp
           
-          # Create Xcode project
-          xcodebuild -project VisionProApp.xcodeproj -list || true
-          xcodebuild -create-xcframework \
-            -framework VisionProApp.xcodeproj \
-            -output VisionProApp.xcframework || true
-
           # Create main.swift
           mkdir -p VisionProApp
           cat > VisionProApp/main.swift <<EOF
@@ -63,9 +75,10 @@ jobs:
           </plist>
           EOF
 
-      - name: Build Vision Pro App (No Code Signing)
+      - name: Build Vision Pro App (Verbose Logging)
         run: |
           cd VisionProApp
+          echo "Starting build process..."
           xcodebuild clean build \
             -project VisionProApp.xcodeproj \
             -scheme VisionProApp \
@@ -73,32 +86,12 @@ jobs:
             -configuration Debug \
             CODE_SIGN_IDENTITY="" \
             CODE_SIGNING_REQUIRED=NO \
-            CODE_SIGNING_ALLOWED=NO
+            CODE_SIGNING_ALLOWED=NO \
+            | tee build_log.txt || { echo "❌ Build failed! See logs below:"; cat build_log.txt; exit 1; }
 
-      - name: Archive Vision Pro App
-        run: |
-          cd VisionProApp
-          xcodebuild archive \
-            -project VisionProApp.xcodeproj \
-            -scheme VisionProApp \
-            -sdk visionos \
-            -configuration Debug \
-            -archivePath build/VisionProApp.xcarchive \
-            CODE_SIGN_IDENTITY="" \
-            CODE_SIGNING_REQUIRED=NO \
-            CODE_SIGNING_ALLOWED=NO
-
-      - name: Export Vision Pro App (Unsigned)
-        run: |
-          cd VisionProApp
-          mkdir -p build/output
-          xcodebuild -exportArchive \
-            -archivePath build/VisionProApp.xcarchive \
-            -exportPath build/output \
-            -exportOptionsPlist <(echo '{}') || true
-
-      - name: Upload Build Artifacts
+      - name: Upload Build Logs on Failure
+        if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: VisionProApp
-          path: VisionProApp/build/output
+          name: Build-Logs
+          path: VisionProApp/build_log.txt
